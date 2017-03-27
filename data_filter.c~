@@ -118,36 +118,31 @@ int main(int argc, char **argv) {
     data = argv[1];   // Data amount
     ipf = argv[2];  // Input file name
     opf = argv[3]; // Output file name
-	printf("lol2\n");
+	printf("lol1\n");
     dataSize = getDataAmount(data);
     bufferSize = getBufferSize(dataSize);
     long int inputSize = dataSize;
-	printf("lol3\n");
-    if(!(buffer = malloc(bufferSize * sizeof(char)))){
-    	printf("%s\n", "real not lol!");
-    }
+
+    buffer = malloc(bufferSize * sizeof(char)); // TODO check alloc
+
     int ifd, ofd;
 
-    if ((ifd = open(ipf, O_RDONLY/*, S_IRUSR*/)) < 0) {
+    if ((ifd = open(ipf, O_RDONLY, S_IRUSR)) < 0) {
         // TODO error message
-		printf("not so lol 1\n");        
-		// goto freeMem;
+        goto freeMem;
         return 0;
     }
-    if (0 > (ifd = open(opf , O_WRONLY/*, S_IWUSR */))) {
+    if (0 > (ifd = open(opf , O_WRONLY, S_IWUSR))) {
         // TODO error message
-		printf("not so lol 2\n");
         return 0;
     }
 
 
     ssize_t readNumber;
     ssize_t written = 0;
-    readNumber = read(ofd, buffer, bufferSize);
-    printf("%zd\n", readNumber);
+    readNumber = read(ifd, buffer, bufferSize);
     if (readNumber < 0) {
         // TODO error message
-        printf("not so lol 3\n");
         return 0;
     }
 
