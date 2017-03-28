@@ -18,14 +18,14 @@ typedef struct data_t {
     DataUnit dataUnit;
 } DataAmount;
 
-long getAmountKiloByte(DataAmount data);
+long long getAmountKiloByte(DataAmount data);
 
 /**
  *
  * @param str
  * @return
  */
-long getDataAmount(char *str) {
+long long getDataAmount(char *str) {
     char *tmp;
     int res = (int) strtol(str, &tmp, 10);
 
@@ -63,7 +63,7 @@ int isPrintable(char c) {
  * @param data - Amount of data to read
  * @return - integer - Buffer size
  */
-size_t getBufferSize(int amount) {
+size_t getBufferSize(long long amount) {
     if (amount >= 1073741824) { // 1024 ^ 3 = 1048576
         return 4096;
     } else if (amount >= 1048576) { // 1024 ^ 2 = 1048576
@@ -80,7 +80,7 @@ size_t getBufferSize(int amount) {
  * @param data - Data anount 
  * @return amount of data in kilobyte
  */
-long getAmountKiloByte(DataAmount data) {
+long long getAmountKiloByte(DataAmount data) {
     if (data.dataUnit == G) {
         return data.amount * 1073741824;
     } else if (data.dataUnit == M) {
@@ -91,6 +91,17 @@ long getAmountKiloByte(DataAmount data) {
         return data.amount;
     }
 }
+
+int filterBuffer(char *inputBuffer,char* outputBuffer, int bufferSize){
+    int j = 0;
+    for (int i = 0; i < bufferSize; ++i){
+        if(isPrintable(inputBuffer[i])){
+            outputBuffer[j++]=inputBuffer[i];
+        }
+    }
+    return j;
+}
+
 
 /**
  * Print statistic in nice format
@@ -105,10 +116,15 @@ void printStatistcs(int charReq, int charRead, int charPrintable) {
 int main(int argc, char **argv) {
     size_t bufferSize;
     char *buffer;
-    long int dataSize;
+    long long inputSize;
 
     // Data amount, input, output
     char *data, *input_file, *output_file;
+
+    // Input file descriptor, output file descriptor
+    int ifd, ofd;
+
+    ssize_t readNumber, written = 0;
 
     if (argc != 4) {
         // TODO error message number of argument is invalid
@@ -119,24 +135,21 @@ int main(int argc, char **argv) {
     input_file = argv[2];   // Input file name
     output_file = argv[3];  // Output file name
 
-    dataSize = getDataAmount(data);
-    bufferSize = getBufferSize(dataSize);
-    long int inputSize = dataSize;
+    inputSize = getDataAmount(data);
+    bufferSize = getBufferSize(inputSize);
 
     if(!(buffer = malloc(bufferSize * sizeof(char)))){
     	// TODO malloc error message
         return 0;
     }
-    int ifd, ofd;
 
-	
-    if ((ifd = open(input_file, O_RDONLY, S_IRUSR)) < 0) {
+    if (0 > (ifd = open(input_file, O_RDONLY /*, S_IRUSR */))) {
         // TODO error message
-		printf("not so lol 1\n");        
-		// goto freeMem;
+		printf("not so lol 1\n");
+		goto freeMem;
         return 0;
     }
-    if (0 > (ofd = open(output_file , O_WRONLY, S_IWUSR))) {
+    if (0 > (ofd = open(output_file , O_WRONLY /*, S_IWUSR */))) {
         // TODO error message
 		printf("not so lol 2\n");
         return 0;
@@ -145,10 +158,7 @@ int main(int argc, char **argv) {
 
 
 
-    ssize_t readNumber;
-    ssize_t written = 0;
     readNumber = read(ifd, buffer, bufferSize);
-    printf("%zd\n", readNumber);
     if (readNumber < 0) {
         // TODO error message
         printf("not so lol 3\n");
@@ -156,7 +166,7 @@ int main(int argc, char **argv) {
     }
 
     if (readNumber == 0) {
-        // file is empty
+        // TODO  file is empty
         return 0;
     }
 
@@ -164,6 +174,7 @@ int main(int argc, char **argv) {
         if (0 > (readNumber = read(ifd, buffer, bufferSize))) {
             // TODO error
         }
+
         inputSize -= readNumber;
         written = 0;
         while (readNumber > 0) {
@@ -178,4 +189,5 @@ int main(int argc, char **argv) {
 
     freeMem:
     	free(buffer);
+        return 0;
 }
