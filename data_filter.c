@@ -108,42 +108,46 @@ int main(int argc, char **argv) {
     long int dataSize;
 
     // Data amount, input, output
-    char *data, *ipf, *opf;
+    char *data, *input_file, *output_file;
 
     if (argc != 4) {
         // TODO error message number of argument is invalid
         return 0;
     }
-	printf("lol1\n");
-    data = argv[1];   // Data amount
-    ipf = argv[2];  // Input file name
-    opf = argv[3]; // Output file name
-	printf("lol2\n");
+
+    data = argv[1];         // Data amount
+    input_file = argv[2];   // Input file name
+    output_file = argv[3];  // Output file name
+
     dataSize = getDataAmount(data);
     bufferSize = getBufferSize(dataSize);
     long int inputSize = dataSize;
-	printf("lol3\n");
+
     if(!(buffer = malloc(bufferSize * sizeof(char)))){
-    	printf("%s\n", "real not lol!");
+    	// TODO malloc error message
+        return 0;
     }
     int ifd, ofd;
 
-    if ((ifd = open(ipf, O_RDONLY/*, S_IRUSR*/)) < 0) {
+	
+    if ((ifd = open(input_file, O_RDONLY, S_IRUSR)) < 0) {
         // TODO error message
 		printf("not so lol 1\n");        
 		// goto freeMem;
         return 0;
     }
-    if (0 > (ifd = open(opf , O_WRONLY/*, S_IWUSR */))) {
+    if (0 > (ofd = open(output_file , O_WRONLY, S_IWUSR))) {
         // TODO error message
 		printf("not so lol 2\n");
         return 0;
     }
+	printf("ifd: %d, ofd: %d\n",ifd, ofd);
+
 
 
     ssize_t readNumber;
     ssize_t written = 0;
-    readNumber = read(ofd, buffer, bufferSize);
+    readNumber = read(ifd, buffer, bufferSize);
     printf("%zd\n", readNumber);
     if (readNumber < 0) {
         // TODO error message
@@ -170,8 +174,8 @@ int main(int argc, char **argv) {
             readNumber -= written;
         }
     }
+	return 0;
 
     freeMem:
-    free(buffer);
-    return 0;
+    	free(buffer);
 }

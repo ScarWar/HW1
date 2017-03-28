@@ -1,0 +1,204 @@
+.  Software License Agreement 
+
+
+IMPORTANT NOTICE
+
+
+READ THE TERMS AND CONDITIONS OF YOUR LICENSE AGREEMENT CAREFULLY BEFORE
+COPYING, INSTALLING, OR USING THE PROGRAMS OR DOCUMENTATION.
+
+THE LICENSE AGREEMENT TOGETHER WITH ANY APPLICABLE ADDENDUM REPRESENTS THE
+ENTIRE AGREEMENT BETWEEN YOU (THE "LICENSEE") AND THE MATHWORKS, INC.
+("MATHWORKS") CONCERNING THE PROGRAM(S) AND DOCUMENTATION.
+                                                                                                                                                          
+BY COPYING, INSTALLING, OR USING THE PROGRAMS AND DOCUMENTATION, YOU ACCEPT THE
+TERMS OF THIS AGREEMENT.  IF YOU ARE NOT WILLING TO DO SO, DO NOT COPY,
+INSTALL, OR USE THE PROGRAMS AND DOCUMENTATION. 
+
+_________________________________________________________________
+
+The MathWorks, Inc. Software License Agreement
+
+Installation and Use Addendum (if applicable)
+
+Academic Installation and Use Addendum (if applicable)
+
+Student License and Home License Installation and Use Addendum (if applicable)
+
+Deployment Addendum 
+
+
+
+
+The MathWorks, Inc. Software License Agreement
+
+
+1. DEFINITIONS. 
+
+    1.1. "Licensee" means you, whether an individual or an entity, to whom
+    MathWorks grants the License, and who is responsible for complying with the
+    contractual obligations of the License, and ensuring that anyone permitted
+    access to the Programs also complies with such obligations.
+
+    1.2. "Affiliate" means a legal entity which is controlled by, or controls,
+    or is under common control with Licensee.  Control means (i) beneficial
+    ownership of at least fifty percent (50%) of the voting securities of a
+    corporation or other business organization with voting securities, or (ii)
+    a fifty percent (50%) or greater interest in the profits and capital of a
+    partnership or other business organization without voting securities,
+    provided that no other individual or entity other than the Licensee also
+    has an equal fifty percent (50%) ownership or interest in the legal entity.
+    Notwithstanding the foregoing, unless MathWorks provides its express
+    written consent to treat the entity as an Affiliate, an Affiliate shall not
+    include any entity that MathWorks has expressly refused to license (or
+    grant access under a license to) its software products or that had a
+    license for MathWorks software products that MathWorks expressly
+    terminated.
+
+    1.3. "Application" shall have the meaning ascribed to it in Section 4.1 of
+    the Deployment Addendum anywhere the term is used in the upper case in this
+    Agreement.
+
+    1.4. "Computer" means either (i) a single physical hardware system
+    containing a single motherboard running an operating system, or (ii) a
+    virtual machine running an operating system.
+
+    1.5. "Documentation" means the user guides, if any, accompanying delivery
+    of a Program on DVD or made available at mathworks.com/help, as may be
+    updated from time to time, including the bug reports made available at
+    mathworks.com/support/bugreports.  Documentation may be delivered in any
+    medium or language. 
+
+    1.6. "Internal Operations" means the use of a Program by employees,
+    consultants, student interns, and software administration contractors of
+    Licensee or an Affiliate on behalf of the Licensee or Affiliate.
+
+    1.7. "Licensed User" means an individual authorized by MathWorks or the
+    Licensee to use the Programs for Licensee's Internal Operations, to the
+    extent permitted by the License Option acquired.
+
+    1.8. "License Manager" means the FlexNet license management software, or
+    the MathWorks Hosted License Manager ("MHLM"), provided with the
+    Program(s).
+
+    1.9. "License Option" means the specific rights, restrictions, and
+    obligations under which Licensee may install and use a Program pursuant to
+    this Agreement, as described in the applicable Installation and Use
+    Addendum, and including restrictions associated with the License being an
+    "Annual License," "Term License," "Perpetual License," "Student License,"
+    "Home License" or "Certain MATLAB Distributed Computing Server ("MDCS")
+    Uses," as described under Article 10 of this Agreement. 
+
+    1.10. "Licensor" means the person who, or entity which, grants a license to
+    MathWorks to redistribute that person's or entity's intellectual property.
+
+    1.11. "Perpetual License" means the right to use the License indefinitely
+    provided that the Licensee always remains in compliance with the terms of
+    this Agreement. 
+
+    1.12. "Program" means the software licensed hereunder, including
+    Documentation, enhancements and error corrections.  Each product licensed
+    hereunder is a separate Program.
+
+    1.13. "Third Party" means any person or legal entity that is not MathWorks,
+    the Licensee, or an Affiliate.
+
+    1.14. "Third Party Software" means the software referenced in Article 8 of
+    this Agreement.
+
+
+2. ACCEPTANCE AND REFUNDS.  If Licensee does not accept the terms and
+conditions of this License and any applicable Addendum, or if Licensee
+terminates this License, for any reason, within thirty (30) days of Program
+delivery (the "Acceptance Period"), then Licensee shall immediately return the
+Programs licensed hereunder to MathWorks or the authorized distributor from
+whom Licensee acquired the Programs and, if returned within the Acceptance
+Period, shall receive a full refund.  By retaining a Program throughout the
+Acceptance Period, Licensee accepts the applicable rights, and agrees to be
+bound by the applicable obligations and restrictions, of this Agreement
+including the License Option acquired with respect to that Program.
+
+3. PROGRAM TRIAL EVALUATION.  Licensee agrees to use any Program provided to
+Licensee as a trial or evaluation only for the period of the trial evaluation
+which may be controlled by a license key code, only to evaluate it individually
+for potential purchase of a license to the Program as an end-user, to conduct
+no business with it, and to remove it and all result files produced from any of
+Licensee's computers at the end of the trial or evaluation period and to comply
+with all other obligations and restrictions in this Agreement. 
+
+4. LICENSE GRANT.  The MathWorks Programs are licensed, not sold.  MathWorks
+hereby grants to Licensee, subject to the terms of this Agreement, a
+nonexclusive license (the "License") to:
+
+    4.1. install and use the Programs solely on Computers controlled by
+    Licensee, in accordance with the License Option acquired as provided in the
+    relevant Installation and Use Addendum, and solely for Internal Operations; 
+
+    4.2. provide access to online Documentation on Licensee's intranet,
+    provided it is not accessible over the open Internet; 
+
+    4.3. print portions of the online Documentation for reasonable use by
+    Licensed Users; and 
+
+    4.4. use the Programs as expressly set forth in the Deployment Addendum.
+
+5. LICENSE RESTRICTIONS.  The License is subject to the express restrictions
+set forth below and any other restrictions set forth in any signed agreement
+between MathWorks and Licensee. Licensee shall not, and shall not cause or
+permit any Affiliate or any Third Party to, directly or indirectly:
+
+    5.1. modify or create any derivative work of, a Program or any part of a
+    Program, except as expressly permitted in Article 8 of this Agreement and
+    in the Deployment Addendum.  Notwithstanding anything to the contrary
+    contained herein, any such permitted modifications must be consistent with
+    all other terms of this Agreement;
+
+    5.2. use a Program or any part of a Program, for any act which infringes
+    copyright of a Program including developing, producing, or testing a
+    computer program containing a feature or functionality that is
+    substantially similar in its expression to the expression contained in a
+    Program or any part of a Program;
+
+
+    5.3. adapt, translate, copy, or convert all or any part of a Program in
+    order to create software, a principal purpose of which is to perform the
+    same or similar functions to a Program or to replace a Program or any
+    component of a Program; 
+
+    5.4. rent, lease, or loan the Programs; use the Programs for supporting
+    Third Parties' use of the Programs, time share the Programs, or provide
+    service bureau or similar service use;
+
+    5.5. disassemble, decompile, reverse engineer a Program, or any portion
+    thereof, or attempt to gain access to its method of operation or source
+    code;
+
+    5.6. sell, license, sublicense, provide access, publish, display,
+    distribute, disseminate, assign, or otherwise transfer (whether by sale,
+    exchange, lease, gift, or otherwise) to a Third Party the Programs, any
+    copy or portion thereof, or any License or other rights thereto, in whole
+    or in part, without MathWorks' prior written consent, except as expressly
+    permitted in the Deployment Addendum; 
+ 
+    5.7. alter, remove, or obscure any copyright, trade secret, patent,
+    trademark, logo, proprietary and/or other legal notices on or in copies of
+    the Programs;
+
+    5.8. use MathWorks' name, trade names, logos, or other trademarks of
+    MathWorks or any of its Affiliates or Licensors in any advertising,
+    promotional literature or any other material, whether in written,
+    electronic, or other form, distributed to any Third Party, except in the
+    form provided by MathWorks, and then solely for purposes of identifying
+    MathWorks' Programs;
+
+    5.9. provide access (directly or indirectly) to the Programs via a web or
+    network Application, except as permitted in Article 8 of the Deployment
+    Addendum;
+
+    5.10. copy, make available for copy, or otherwise reproduce the Programs,
+    in whole or in part, except either (a) as may be required for their
+    installation for the purpose of executing the Program in accordance with
+    the License Option, (b) as expressly permitted in the Deployment Addendum,
+    or (c) to make a reasonable number of copies solely for back-up purposes
+    provided that any such permitted copies shall reproduce all copyright,
+    trade secret, patent, logo, 
