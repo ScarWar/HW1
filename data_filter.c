@@ -20,6 +20,7 @@ typedef struct data_t {
 
 long long getAmountKiloByte(DataAmount data);
 
+
 /**
  *
  * @param str
@@ -61,9 +62,9 @@ int isPrintable(char c) {
  * - 1028M = G
  * data amount received by user
  * @param data - Amount of data to read
- * @return - integer - Buffer size
+ * @return - integer - buffer size
  */
-size_t getBufferSize(long long amount) {
+int getBufferSize(long long amount) {
     if (amount >= 1073741824) { // 1024 ^ 3 = 1048576
         return 4096;
     } else if (amount >= 1048576) { // 1024 ^ 2 = 1048576
@@ -77,7 +78,7 @@ size_t getBufferSize(long long amount) {
 
 /**
  * Return amount of data in kilobyte
- * @param data - Data anount 
+ * @param data - Data amount
  * @return amount of data in kilobyte
  */
 long long getAmountKiloByte(DataAmount data) {
@@ -92,16 +93,6 @@ long long getAmountKiloByte(DataAmount data) {
     }
 }
 
-int filterBuffer(char *inputBuffer,char* outputBuffer, int bufferSize){
-    int j = 0;
-    for (int i = 0; i < bufferSize; ++i){
-        if(isPrintable(inputBuffer[i])){
-            outputBuffer[j++]=inputBuffer[i];
-        }
-    }
-    return j;
-}
-
 
 /**
  * Print statistic in nice format
@@ -113,9 +104,22 @@ void printStatistcs(int charReq, int charRead, int charPrintable) {
     printf("%d characters requested, %d characters read, %d are printable\n", charReq, charRead, charPrintable);
 }
 
+int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize) {
+    if (inputBuffer == NULL || outputBuffer == NULL) {
+        return -1;
+    }
+    int i, j = 0;
+    for (i = 0; i < bufferSize; ++i) {
+        if (isPrintable(inputBuffer[i])) {
+            outputBuffer[j++] = inputBuffer[i];
+        }
+    }
+    return j;
+}
+
 int main(int argc, char **argv) {
-    size_t bufferSize;
-    char *buffer;
+    int bufferSize;
+    char *inputBuffer = NULL, *outputBuffer = NULL;
     long long inputSize;
 
     // Data amount, input, output
@@ -124,7 +128,10 @@ int main(int argc, char **argv) {
     // Input file descriptor, output file descriptor
     int ifd, ofd;
 
-    ssize_t readNumber, written = 0;
+
+    ssize_t readNumber;
+    int written = 0, printable = 0;
+    ssize_t writtenCount = 0, printableCount = 0;
 
     if (argc != 4) {
         // TODO error message number of argument is invalid
@@ -138,27 +145,30 @@ int main(int argc, char **argv) {
     inputSize = getDataAmount(data);
     bufferSize = getBufferSize(inputSize);
 
-    if(!(buffer = malloc(bufferSize * sizeof(char)))){
-    	// TODO malloc error message
-        return 0;
+    if (!(inputBuffer = malloc(bufferSize * sizeof(char)))) {
+        // TODO malloc error message
+        goto freeMem;
     }
 
-    if (0 > (ifd = open(input_file, O_RDONLY /*, S_IRUSR */))) {
+    if (!(inputBuffer = malloc(bufferSize * sizeof(char)))) {
+        // TODO malloc error message
+        goto freeMem;
+    }
+
+    if (0 > (ifd = open(input_file, O_RDONLY, S_IRUSR))) {
         // TODO error message
-		printf("not so lol 1\n");
-		goto freeMem;
-        return 0;
+        printf("not so lol 1\n");
+        goto freeMem;
     }
-    if (0 > (ofd = open(output_file , O_WRONLY /*, S_IWUSR */))) {
+    if (0 > (ofd = open(output_file, O_WRONLY, S_IWUSR))) {
         // TODO error message
-		printf("not so lol 2\n");
+        printf("not so lol 2\n");
         return 0;
     }
-	printf("ifd: %d, ofd: %d\n",ifd, ofd);
+    printf("ifd: %d, ofd: %d\n", ifd, ofd);
 
 
-
-    readNumber = read(ifd, buffer, bufferSize);
+    readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
     if (readNumber < 0) {
         // TODO error message
         printf("not so lol 3\n");
@@ -171,23 +181,32 @@ int main(int argc, char **argv) {
     }
 
     while (inputSize > 0) {
-        if (0 > (readNumber = read(ifd, buffer, bufferSize))) {
+        if ((readNumber = read(ifd, inputBuffer, (size_t) bufferSize)) < 0) {
             // TODO error
         }
 
         inputSize -= readNumber;
-        written = 0;
-        while (readNumber > 0) {
-            written = write(ofd, buffer, readNumber);
+
+
+        if (-1 == (printable = filterBuffer(inputBuffer, outputBuffer, bufferSize))) {
+            goto freeMem;
+        }
+
+        while (printable > 0) {
+            written = (int) write(ofd, inputBuffer, (size_t) printable);
             if (written < 0) {
                 // TODO error message
             }
-            readNumber -= written;
+            printable -= written;
+            printableCount += printable;
+            writtenCount += written;
         }
     }
-	return 0;
 
     freeMem:
-    	free(buffer);
-        return 0;
+    free(inputBuffer);
+    free(outputBuffer);
+
+
+    return 0;
 }
