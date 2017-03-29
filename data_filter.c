@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
+//#include <time.h>
 
 
 typedef enum data_unit_t {
@@ -51,7 +53,7 @@ long long getDataAmount(char *str) {
 		 	  otherwise 0.
  */
 int isPrintable(char c) {
-    return 20 <= c && c <= 126;
+    return 32 <= c && c <= 126;
 }
 
 /**
@@ -100,7 +102,7 @@ long long getAmountKiloByte(DataAmount data) {
  * @param charRead 		- Number of characters read
  * @param charPrintable - Number of printable characters
  */
-void printStatistcs(int charReq, int charRead, int charPrintable) {
+void printStatistics(int charReq, int charRead, int charPrintable) {
     printf("%d characters requested, %d characters read, %d are printable\n", charReq, charRead, charPrintable);
 }
 
@@ -117,6 +119,17 @@ int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize) {
     return j;
 }
 
+char writeBuffer(const char *inputBuffer, int ofd, int size) {
+    while (size > 0) {
+        int written = (int) write(ofd, inputBuffer, (size_t) size);
+        if (written < 0) {
+            return 0;
+        }
+        size -= written;
+    }
+    return 1;
+}
+
 int main(int argc, char **argv) {
     int bufferSize;
     char *inputBuffer = NULL, *outputBuffer = NULL;
@@ -126,12 +139,14 @@ int main(int argc, char **argv) {
     char *data, *input_file, *output_file;
 
     // Input file descriptor, output file descriptor
-    int ifd, ofd;
+    int ifd = 0, ofd = 0;
 
 
     ssize_t readNumber;
-    int written = 0, printable = 0;
+    int printable = 0;
     ssize_t writtenCount = 0, printableCount = 0;
+    long long int fileLength, fileLengthCounter;
+
 
     if (argc != 4) {
         // TODO error message number of argument is invalid
@@ -143,30 +158,28 @@ int main(int argc, char **argv) {
     output_file = argv[3];  // Output file name
 
     inputSize = getDataAmount(data);
-    bufferSize = getBufferSize(inputSize);
+    bufferSize = 50;//getBufferSize(inputSize);
 
-    if (!(inputBuffer = malloc(bufferSize * sizeof(char)))) {
+    inputBuffer = malloc(bufferSize * sizeof(char));
+    outputBuffer = malloc(bufferSize * sizeof(char));
+
+    if (inputBuffer == NULL || outputBuffer == NULL) {
         // TODO malloc error message
         goto freeMem;
     }
 
-    if (!(inputBuffer = malloc(bufferSize * sizeof(char)))) {
-        // TODO malloc error message
+    ifd = open(input_file, O_RDONLY, S_IRUSR);
+    ofd = open(output_file, O_WRONLY, S_IWUSR);
+    if (ifd == -1 || ofd == -1) {
+        // TODO error message
+        printf("not so lol\n");
         goto freeMem;
     }
 
-    if (0 > (ifd = open(input_file, O_RDONLY, S_IRUSR))) {
-        // TODO error message
-        printf("not so lol 1\n");
-        goto freeMem;
-    }
-    if (0 > (ofd = open(output_file, O_WRONLY, S_IWUSR))) {
-        // TODO error message
-        printf("not so lol 2\n");
-        return 0;
-    }
-    printf("ifd: %d, ofd: %d\n", ifd, ofd);
-
+//    printf("ifd: %d, ofd: %d\n", ifd, ofd);
+    fileLength = lseek(ifd, 0, SEEK_END);
+    lseek(ifd, 0, SEEK_SET);
+    fileLengthCounter = fileLength;
 
     readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
     if (readNumber < 0) {
@@ -179,31 +192,44 @@ int main(int argc, char **argv) {
         // TODO  file is empty
         return 0;
     }
+    inputSize -= readNumber;
+    fileLengthCounter -= readNumber;
 
+    printable = filterBuffer(inputBuffer, outputBuffer, bufferSize);
+
+    if (printable == -1 || !writeBuffer(outputBuffer, ofd, printable)) {
+        goto freeMem;
+    }
+    printableCount += printable;
+    writtenCount += printable;
+
+//    sleep(1);
     while (inputSize > 0) {
-        if ((readNumber = read(ifd, inputBuffer, (size_t) bufferSize)) < 0) {
+        readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
+        if (readNumber < 0) {
             // TODO error
-        }
-
-        inputSize -= readNumber;
-
-
-        if (-1 == (printable = filterBuffer(inputBuffer, outputBuffer, bufferSize))) {
             goto freeMem;
         }
+        inputSize -= readNumber;
+        fileLengthCounter -= readNumber;
 
-        while (printable > 0) {
-            written = (int) write(ofd, inputBuffer, (size_t) printable);
-            if (written < 0) {
-                // TODO error message
-            }
-            printable -= written;
-            printableCount += printable;
-            writtenCount += written;
+        printable = filterBuffer(inputBuffer, outputBuffer, bufferSize);
+
+        if (printable == -1 || !writeBuffer(inputBuffer, ofd, printable)) {
+            goto freeMem;
+        }
+        writtenCount += printable;
+        printableCount += printable;
+
+        if (readNumber == 0 && fileLengthCounter == 0) {
+            lseek(ifd, 0, SEEK_SET);
+            fileLengthCounter = fileLength;
         }
     }
 
     freeMem:
+    close(ofd);
+    close(ifd);
     free(inputBuffer);
     free(outputBuffer);
 
