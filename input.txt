@@ -1,9 +1,5 @@
-The MathWorks, Inc.  Software License Agreement 
-
-
+The MathWorks, Inc.  Software License Agreement
 IMPORTANT NOTICE
-
-
 READ THE TERMS AND CONDITIONS OF YOUR LICENSE AGREEMENT CAREFULLY BEFORE
 COPYING, INSTALLING, OR USING THE PROGRAMS OR DOCUMENTATION.
 
@@ -27,11 +23,7 @@ Student License and Home License Installation and Use Addendum (if applicable)
 
 Deployment Addendum 
 
-
-
-
 The MathWorks, Inc. Software License Agreement
-
 
 1. DEFINITIONS. 
 
