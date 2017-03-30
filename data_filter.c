@@ -184,7 +184,6 @@ int main(int argc, char **argv) {
     readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
     if (readNumber < 0) {
         // TODO error message
-        printf("not so lol 3\n");
         return 0;
     }
 
@@ -214,7 +213,7 @@ int main(int argc, char **argv) {
         fileLengthCounter -= readNumber;
 
         printable = filterBuffer(inputBuffer, outputBuffer, bufferSize);
-
+        printf("%s", outputBuffer);
         if (printable == -1 || !writeBuffer(inputBuffer, ofd, printable)) {
             goto freeMem;
         }
