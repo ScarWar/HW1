@@ -110,21 +110,22 @@ void printStatistics(long long int charReq, long long int charRead, long long in
     printf("%lld characters requested, %lld characters read, %lld are printable\n", charReq, charRead, charPrintable);
 }
 
-int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int *inputBufferIndex, int outputBufferIndex, int endIndex, char *isBufferFull) {
+int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int readNumber, int *iBufferIndex, int oBufferIndex, char *isBufferFull) {
     if (inputBuffer == NULL || outputBuffer == NULL) {
         // TODO error message and errno
         return -1;
     }
     int i, j = 0;
-    for (i = inputBufferIndex; i < bufferSize; ++i) {
+    for (i = *iBufferIndex; i < readNumber; ++i) {
         if (isPrintable(inputBuffer[i])) {
-            outputBuffer[outputBufferIndex + j++] = inputBuffer[i];
+            outputBuffer[oBufferIndex + j++] = inputBuffer[i];
         }
-        // Write t output file If file outputBuffer 
-        // is full
-        if(outputBufferIndex + j == bufferSize){
-            *isBufferFull = TRUE;
-            *inputBufferIndex = ++i;
+        // Write to output file If file outputBuffer 
+        // is full. Set the index from which you
+        // should filter start filter.
+        if(oBufferIndex + j == bufferSize){
+            *isBufferFull = 1;
+            *iBufferIndex = ++i;
             return j;
         }
     }
@@ -152,9 +153,10 @@ int main(int argc, char **argv) {
     // Input file descriptor, output file descriptor
     int ifd = 0, ofd = 0;
 
-    char isBufferFull = FALSE;
-    int printable = 0. *inputBufferIndex = 0, outputBufferIndex = 0;
+    char isBufferFull = 0;
+    int iBufferIndex = 0, oBufferIndex = 0, printable = 0;
     ssize_t readNumber, writtenCount = 0, printableCount = 0;
+
     // long long int fileLength, fileLengthCounter;
     // struct stat st;
 
@@ -171,6 +173,7 @@ int main(int argc, char **argv) {
     outputSize = getDataAmount(data);
     bufferSize = getBufferSize(outputSize);
     charReq = outputSize;
+
 
     inputBuffer = malloc(bufferSize * sizeof(char));
     outputBuffer = malloc(bufferSize * sizeof(char));
@@ -201,9 +204,6 @@ int main(int argc, char **argv) {
         goto freeMem;
     }
 
-    // stat(input_file, &st);
-    // fileLength = st.st_size;
-    // fileLengthCounter = fileLength;
 
     while (outputSize > 0) {
 
@@ -219,8 +219,9 @@ int main(int argc, char **argv) {
             // Reset pointer if we read all the file 
             lseek(ifd, 0, SEEK_SET);            
         } else {
-            printable = filterBuffer(inputBuffer, outputBuffer, readNumber, inputBufferIndex, outputBufferIndex, &isBufferFull);
+            printable = filterBuffer(inputBuffer, outputBuffer, bufferSize,readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
 
+            printableCount += printable;        // How much printable bytes
 
 
             if (printable == -1){
@@ -232,8 +233,8 @@ int main(int argc, char **argv) {
                 // input  [+++#    ]
                 // output [########]
 
-                outputBufferIndex = 0;
-                readNumber -= inputBufferIndex;
+                oBufferIndex = 0;
+                readNumber -= iBufferIndex;
                 // Write to output
                 if(!writeBuffer(outputBuffer, ofd, bufferSize)){
                     // TODO error
@@ -243,23 +244,24 @@ int main(int argc, char **argv) {
                 // output [        ]
 
                 // Fill the output buffer with bytes left in input buffer
-                *outputBufferIndex = 0;
-                printable = filterBuffer(inputBuffer, outputBuffer, readNumber, inputBufferIndex, outputBufferIndex, &isBufferFull);
+                oBufferIndex = 0;
+                printable = filterBuffer(inputBuffer, outputBuffer, bufferSize,readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
                 
                 // input  [        ]
                 // output [#       ]
-                *inputBufferIndex = 0;
-                isBufferFull = FALSE;
+                iBufferIndex = 0;
+                isBufferFull = 0;
             } else {
                 // input  [        ]
                 // output [####    ]
-                outputBufferIndex += printable;
+                oBufferIndex += printable;
             }
 
-            outputSize -= readNumber; 		 	// How much left to read
-            									// from request
-            writtenCount += readNumber;			// How much bytes read
+            outputSize -= readNumber;           // How much left to read
+                                                // from request
+            writtenCount += readNumber;         // How much bytes read
             printableCount += printable;        // How much printable bytes
+
         }
     }
 
