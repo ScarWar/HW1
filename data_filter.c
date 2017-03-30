@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 
-#define REPORT_ERR(MSG) { printf("LINE: %d, Error - %s", __LINE__, (MSG)); }
+#define REPORT_ERR(MSG) { printf("LINE: %d, Error - %s\n", __LINE__, (MSG)); }
 
 #define ARGC_ERR_MSG "Invalid nubmer of argument. Expected 4, but recieved"
 #define FORMANT_ERR_MSG "Invalid argument foramt"
@@ -157,12 +157,9 @@ int main(int argc, char **argv) {
     int iBufferIndex = 0, oBufferIndex = 0, printable = 0;
     ssize_t readNumber, writtenCount = 0, printableCount = 0;
 
-    // long long int fileLength, fileLengthCounter;
-    // struct stat st;
-
 
     if (argc != 4) {
-    	printf("LINE: %d, Error - %s %d", __LINE__, ARGC_ERR_MSG, argc);
+    	printf("LINE: %d, Error - %s %d\n", __LINE__, ARGC_ERR_MSG, argc);
         return 0;
     }
 
@@ -179,25 +176,25 @@ int main(int argc, char **argv) {
     outputBuffer = malloc(bufferSize * sizeof(char));
 
     if (inputBuffer == NULL || outputBuffer == NULL) {
-    	printf("LINE: %d, Error - %s", __LINE__, ALLOC_ERR_MSG);
+    	printf("LINE: %d, Error - %s\n", __LINE__, ALLOC_ERR_MSG);
         goto freeMem;
     }
 
     ifd = open(input_file, O_RDONLY, S_IRUSR);
     if(ifd == -1){
-    	printf("LINE: %d, Error - %s %s", __LINE__, OPEN_FILE_ERR_MSG, input_file);
+    	printf("LINE: %d, Error - %s %s\n", __LINE__, OPEN_FILE_ERR_MSG, input_file);
     	goto freeMem;
     }
 
     ofd = creat(output_file, S_IRUSR);
     if(ofd == -1){
-    	printf("LINE: %d, Error - %s %s", __LINE__, CREATE_FILE_ERR_MSG, input_file);
+    	printf("LINE: %d, Error - %s %s\n", __LINE__, CREATE_FILE_ERR_MSG, input_file);
     	goto freeMem;
     }
 
     ofd = open(output_file, O_WRONLY, S_IWUSR);
     if(ofd == -1){
-    	printf("LINE: %d, Error - %s %s", __LINE__, OPEN_FILE_ERR_MSG, input_file);
+    	printf("LINE: %d, Error - %s %s\n", __LINE__, OPEN_FILE_ERR_MSG, input_file);
     	
     }
     if (ifd == -1 || ofd == -1) {
@@ -206,62 +203,49 @@ int main(int argc, char **argv) {
 
 
     while (outputSize > 0) {
-
-        readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
-        // input  [####    ]
+        bufferReadSize = min(outputSize, bufferSize);
+        readNumber = read(ifd, inputBuffer, (size_t) bufferReadSize);
 
 	    if (readNumber < 0) {
-	    	printf("LINE: %d, Error - %s %s", __LINE__, READ_FILE_ERR_MSG, input_file);
+	    	printf("LINE: %d, Error - %s %s\n", __LINE__, READ_FILE_ERR_MSG, input_file);
 	        goto freeMem;
 	    }
-        // EOF 
-        if(readNumber == 0){
-            // Reset pointer if we read all the file 
+        if(readNumber == 0){ 
+            // EOF, Reset pointer if we read all the file 
             lseek(ifd, 0, SEEK_SET);            
         } else {
+            printf("%zu %d\n", readNumber, bufferReadSize);
             printable = filterBuffer(inputBuffer, outputBuffer, bufferSize,readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
-
-            printableCount += printable;        // How much printable bytes
-
-
             if (printable == -1){
                 // TODO error
                 goto freeMem;
             }
             
             if(isBufferFull){
-                // input  [+++#    ]
-                // output [########]
-
+                // bufferWritreSize = min(outputSize, bufferSize);
                 oBufferIndex = 0;
                 readNumber -= iBufferIndex;
+                printableCount += printable;        // How much printable bytes
                 // Write to output
                 if(!writeBuffer(outputBuffer, ofd, bufferSize)){
                     // TODO error
                     goto freeMem;
                 }
-                // input  [+++#    ]
-                // output [        ]
 
                 // Fill the output buffer with bytes left in input buffer
                 oBufferIndex = 0;
                 printable = filterBuffer(inputBuffer, outputBuffer, bufferSize,readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
-                
-                // input  [        ]
-                // output [#       ]
+                printableCount += printable;    // How much printable bytes
                 iBufferIndex = 0;
                 isBufferFull = 0;
             } else {
-                // input  [        ]
-                // output [####    ]
                 oBufferIndex += printable;
+                printableCount += printable;    // How much printable bytes
             }
 
             outputSize -= readNumber;           // How much left to read
                                                 // from request
             writtenCount += readNumber;         // How much bytes read
-            printableCount += printable;        // How much printable bytes
-
         }
     }
 
