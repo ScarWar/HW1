@@ -110,31 +110,34 @@ void printStatistics(long long int charReq, long long int charRead, long long in
     printf("%lld characters requested, %lld characters read, %lld are printable\n", charReq, charRead, charPrintable);
 }
 
-int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize) {
+int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int *inputBufferIndex, int outputBufferIndex, int endIndex, char *isBufferFull) {
     if (inputBuffer == NULL || outputBuffer == NULL) {
         // TODO error message and errno
         return -1;
     }
     int i, j = 0;
-    for (i = 0; i < bufferSize; ++i) {
+    for (i = inputBufferIndex; i < bufferSize; ++i) {
         if (isPrintable(inputBuffer[i])) {
-            outputBuffer[j++] = inputBuffer[i];
+            outputBuffer[outputBufferIndex + j++] = inputBuffer[i];
+        }
+        // Write t output file If file outputBuffer 
+        // is full
+        if(outputBufferIndex + j == bufferSize){
+            *isBufferFull = TRUE;
+            *inputBufferIndex = ++i;
+            return j;
         }
     }
     return j;
 }
 
 // TODO Write error message and errno 
-char writeBuffer(const char *outputBuffer, int ofd, int size) {
-    // while (size > 0) {
-        ssize_t written = write(ofd, outputBuffer, (size_t) size);
-        if (written < 0) {
-            printf("%zu\n", written);
-        	// TODO error message
-            return 0;
-        }
-        // size -= written;
-    // }
+char writeBuffer(char *outputBuffer, int ofd, int size) {
+    ssize_t written = write(ofd, outputBuffer, (size_t) size);
+    if (written < 0) {
+    	// TODO error message
+        return 0;
+    }
     return 1;
 }
 
@@ -149,11 +152,11 @@ int main(int argc, char **argv) {
     // Input file descriptor, output file descriptor
     int ifd = 0, ofd = 0;
 
-    char isEmpty;
-    int printable = 0;
+    char isBufferFull = FALSE;
+    int printable = 0. *inputBufferIndex = 0, outputBufferIndex = 0;
     ssize_t readNumber, writtenCount = 0, printableCount = 0;
-    long long int fileLength, fileLengthCounter;
-    struct stat st;
+    // long long int fileLength, fileLengthCounter;
+    // struct stat st;
 
 
     if (argc != 4) {
@@ -198,50 +201,65 @@ int main(int argc, char **argv) {
         goto freeMem;
     }
 
-    // fileLength = lseek(ifd, 0, SEEK_END);
-    // lseek(ifd, 0, SEEK_SET);
-
-    stat(input_file, &st);
-    fileLength = st.st_size;
-    fileLengthCounter = fileLength;
-
-    printf("%jd\n", st.st_size);
-    if(!fileLength){
-    	isEmpty = 1;
-    }
-
+    // stat(input_file, &st);
+    // fileLength = st.st_size;
+    // fileLengthCounter = fileLength;
 
     while (outputSize > 0) {
-    	bufferReadSize = min(bufferSize, outputSize);
-    	if(!isEmpty){
-    		bufferReadSize = min(bufferReadSize, fileLengthCounter);
-    	}
-        readNumber = read(ifd, inputBuffer, (size_t) bufferReadSize);
-        if (readNumber != bufferReadSize){
-        	// TODO error message
-        	goto freeMem;
-        }
+
+        readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
+        // input  [####    ]
+
 	    if (readNumber < 0) {
 	    	printf("LINE: %d, Error - %s %s", __LINE__, READ_FILE_ERR_MSG, input_file);
 	        goto freeMem;
 	    }
-        printable = filterBuffer(inputBuffer, outputBuffer, readNumber);
+        // EOF 
+        if(readNumber == 0){
+            // Reset pointer if we read all the file 
+            lseek(ifd, 0, SEEK_SET);            
+        } else {
+            printable = filterBuffer(inputBuffer, outputBuffer, readNumber, inputBufferIndex, outputBufferIndex, &isBufferFull);
 
-        if (printable == -1 || !writeBuffer(outputBuffer, ofd, printable)) {
-            goto freeMem;
-        }
-        printf("%lld\n", outputSize);
-        outputSize -= readNumber; 		 	// How much left to read
-        									// from request
-        fileLengthCounter -= readNumber; 	// How much left to 
-        								 	// read from input file
-        writtenCount += readNumber;			// How much bytes read
-        printableCount += printable;        // How much printable bytes
 
-        // Reset pointer if we read all the file 
-        if (fileLengthCounter == 0) {
-            lseek(ifd, 0, SEEK_SET);
-            fileLengthCounter = fileLength;
+
+            if (printable == -1){
+                // TODO error
+                goto freeMem;
+            }
+            
+            if(isBufferFull){
+                // input  [+++#    ]
+                // output [########]
+
+                outputBufferIndex = 0;
+                readNumber -= inputBufferIndex;
+                // Write to output
+                if(!writeBuffer(outputBuffer, ofd, bufferSize)){
+                    // TODO error
+                    goto freeMem;
+                }
+                // input  [+++#    ]
+                // output [        ]
+
+                // Fill the output buffer with bytes left in input buffer
+                *outputBufferIndex = 0;
+                printable = filterBuffer(inputBuffer, outputBuffer, readNumber, inputBufferIndex, outputBufferIndex, &isBufferFull);
+                
+                // input  [        ]
+                // output [#       ]
+                *inputBufferIndex = 0;
+                isBufferFull = FALSE;
+            } else {
+                // input  [        ]
+                // output [####    ]
+                outputBufferIndex += printable;
+            }
+
+            outputSize -= readNumber; 		 	// How much left to read
+            									// from request
+            writtenCount += readNumber;			// How much bytes read
+            printableCount += printable;        // How much printable bytes
         }
     }
 

@@ -2,22 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
-//#include <time.h>
 
 
+#define REPORT_ERR(MSG) { printf("LINE: %d, Error - %s", __LINE__, (MSG)); }
 
-#define REPROT_ERR(MSG) { print("LINE: %d, Error - %s", __LINE__, (MSG)); }
-
-#define ARGC_ERR_MSG(argc) "Invalid nubmer of argument, Expected 4, but recieved %d", argc
+#define ARGC_ERR_MSG "Invalid nubmer of argument. Expected 4, but recieved"
 #define FORMANT_ERR_MSG "Invalid argument foramt"
 #define ALLOC_ERR_MSG "Memory allocation failed"
-#define READ_FILE_ERR_MSG(file_name) "Reading from %s failed", file_name
-#define WRITE_FILE_ERR_MSG(file_name) "Writing to %s failed", file_name
+#define READ_FILE_ERR_MSG "Failed reading from"
+#define WRITE_FILE_ERR_MSG "Failed writing to"
 #define OPEN_FILE_ERR_MSG "Unable to open file"
-#define EMPTY_FILE_ERR_MSG(file_name) "%s is empty", file_name
+#define CREATE_FILE_ERR_MSG "Unable to create file"
 
+#define min(x,y) ((x) <= (y) ? (x) : (y))
 
 typedef enum data_unit_t {
     B,
@@ -35,17 +35,13 @@ typedef struct data_t {
 long long getAmountKiloByte(DataAmount data);
 
 
-/**
- *
- * @param str
- * @return
- */
 long long getDataAmount(char *str) {
     char *tmp;
     int res = (int) strtol(str, &tmp, 10);
 
     DataAmount data;
     data.amount = res;
+    // TODO error 
     if (0 == strcmp(tmp, "B")) {
         data.dataUnit = B;
     } else if (0 == strcmp(tmp, "K")) {
@@ -78,15 +74,11 @@ int isPrintable(char c) {
  * @param data - Amount of data to read
  * @return - integer - buffer size
  */
-int getBufferSize(long long amount) {
-    if (amount >= 1073741824) { // 1024 ^ 3 = 1048576
+int getBufferSize(long long int amount) {
+    if (amount >= 1048576) { // 1024 ^ 2 = 1048576 aka over a 1M
         return 4096;
-    } else if (amount >= 1048576) { // 1024 ^ 2 = 1048576
-        return 2048;
-    } else if (amount >= 1024) {
-        return 1024;
     }
-    return 512;
+	return 1024;
 }
 
 
@@ -118,8 +110,9 @@ void printStatistics(long long int charReq, long long int charRead, long long in
     printf("%lld characters requested, %lld characters read, %lld are printable\n", charReq, charRead, charPrintable);
 }
 
-int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize) {
+int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, ) {
     if (inputBuffer == NULL || outputBuffer == NULL) {
+        // TODO error message and errno
         return -1;
     }
     int i, j = 0;
@@ -131,21 +124,24 @@ int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize) {
     return j;
 }
 
-char writeBuffer(const char *inputBuffer, int ofd, int size) {
-    while (size > 0) {
-        int written = (int) write(ofd, inputBuffer, (size_t) size);
+// TODO Write error message and errno 
+char writeBuffer(const char *outputBuffer, int ofd, int size) {
+    // while (size > 0) {
+        ssize_t written = write(ofd, outputBuffer, (size_t) size);
         if (written < 0) {
+            printf("%zu\n", written);
+        	// TODO error message
             return 0;
         }
-        size -= written;
-    }
+        // size -= written;
+    // }
     return 1;
 }
 
 int main(int argc, char **argv) {
-    int bufferSize;
+    int bufferSize, bufferReadSize = 0, bufferWritreSize = 0;
     char *inputBuffer = NULL, *outputBuffer = NULL;
-    long long inputSize;
+    long long int outputSize, charReq = 0; 
 
     // Data amount, input, output
     char *data, *input_file, *output_file;
@@ -153,15 +149,15 @@ int main(int argc, char **argv) {
     // Input file descriptor, output file descriptor
     int ifd = 0, ofd = 0;
 
-
-    ssize_t readNumber;
+    char isEmpty;
     int printable = 0;
-    ssize_t writtenCount = 0, printableCount = 0;
+    ssize_t readNumber, writtenCount = 0, printableCount = 0;
     long long int fileLength, fileLengthCounter;
+    struct stat st;
 
 
     if (argc != 4) {
-        REPORT_ERR(ARGC_ERR_MSG(argc))
+    	printf("LINE: %d, Error - %s %d", __LINE__, ARGC_ERR_MSG, argc);
         return 0;
     }
 
@@ -169,74 +165,87 @@ int main(int argc, char **argv) {
     input_file = argv[2];   // Input file name
     output_file = argv[3];  // Output file name
 
-    inputSize = getDataAmount(data);
-    bufferSize = getBufferSize(inputSize);
+    outputSize = getDataAmount(data);
+    bufferSize = getBufferSize(outputSize);
+    charReq = outputSize;
 
     inputBuffer = malloc(bufferSize * sizeof(char));
     outputBuffer = malloc(bufferSize * sizeof(char));
 
     if (inputBuffer == NULL || outputBuffer == NULL) {
-        // TODO malloc error message
+    	printf("LINE: %d, Error - %s", __LINE__, ALLOC_ERR_MSG);
         goto freeMem;
     }
 
     ifd = open(input_file, O_RDONLY, S_IRUSR);
+    if(ifd == -1){
+    	printf("LINE: %d, Error - %s %s", __LINE__, OPEN_FILE_ERR_MSG, input_file);
+    	goto freeMem;
+    }
+
+    ofd = creat(output_file, S_IRUSR);
+    if(ofd == -1){
+    	printf("LINE: %d, Error - %s %s", __LINE__, CREATE_FILE_ERR_MSG, input_file);
+    	goto freeMem;
+    }
+
     ofd = open(output_file, O_WRONLY, S_IWUSR);
+    if(ofd == -1){
+    	printf("LINE: %d, Error - %s %s", __LINE__, OPEN_FILE_ERR_MSG, input_file);
+    	
+    }
     if (ifd == -1 || ofd == -1) {
-        // TODO error message
         goto freeMem;
     }
 
+    // fileLength = lseek(ifd, 0, SEEK_END);
+    // lseek(ifd, 0, SEEK_SET);
 
-    fileLength = lseek(ifd, 0, SEEK_END);
-    lseek(ifd, 0, SEEK_SET);
+    stat(input_file, &st);
+    fileLength = st.st_size;
     fileLengthCounter = fileLength;
 
-    readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
-    if (readNumber < 0) {
-        REPORT_ERR(READ_FILE_ERR_MSG(input_file))
-        return 0;
+    printf("%jd\n", st.st_size);
+    if(!fileLength){
+    	isEmpty = 1;
     }
 
-    if (readNumber == 0) {
-        REPORT_ERR(EMPTY_FILE_ERR_MSG(input_file))
-        return 0;
-    }
-    inputSize -= readNumber;
-    fileLengthCounter -= readNumber;
 
-    printable = filterBuffer(inputBuffer, outputBuffer, bufferSize);
+    while (outputSize > 0) {
+    	bufferReadSize = min(bufferSize, outputSize);
+    	if(!isEmpty){
+    		bufferReadSize = min(bufferReadSize, fileLengthCounter);
+    	}
+        readNumber = read(ifd, inputBuffer, (size_t) bufferReadSize);
+        if (readNumber != bufferReadSize){
+        	// TODO error message
+        	goto freeMem;
+        }
+	    if (readNumber < 0) {
+	    	printf("LINE: %d, Error - %s %s", __LINE__, READ_FILE_ERR_MSG, input_file);
+	        goto freeMem;
+	    }
+        printable = filterBuffer(inputBuffer, outputBuffer, readNumber);
 
-    if (printable == -1 || !writeBuffer(outputBuffer, ofd, printable)) {
-        goto freeMem;
-    }
-    printableCount += printable;
-    writtenCount += printable;
-
-    while (inputSize > 0) {
-        readNumber = read(ifd, inputBuffer, (size_t) bufferSize);
-        if (readNumber < 0) {
-            // TODO error
+        if (printable == -1 || !writeBuffer(outputBuffer, ofd, printable)) {
             goto freeMem;
         }
-        inputSize -= readNumber;
-        fileLengthCounter -= readNumber;
+        printf("%lld\n", outputSize);
+        outputSize -= readNumber; 		 	// How much left to read
+        									// from request
+        fileLengthCounter -= readNumber; 	// How much left to 
+        								 	// read from input file
+        writtenCount += readNumber;			// How much bytes read
+        printableCount += printable;        // How much printable bytes
 
-        printable = filterBuffer(inputBuffer, outputBuffer, bufferSize);
-
-        if (printable == -1 || !writeBuffer(inputBuffer, ofd, printable)) {
-            goto freeMem;
-        }
-        writtenCount += printable;
-        printableCount += printable;
-
-        if (readNumber == 0 && fileLengthCounter == 0) {
+        // Reset pointer if we read all the file 
+        if (fileLengthCounter == 0) {
             lseek(ifd, 0, SEEK_SET);
             fileLengthCounter = fileLength;
         }
     }
 
-	printStatistics()
+	printStatistics(charReq, writtenCount, printableCount);
 	
     freeMem:
     close(ofd);
