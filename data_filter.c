@@ -5,9 +5,8 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
-
-#define REPORT_ERR(MSG) { printf("LINE: %d, Error - %s\n", __LINE__, (MSG)); }
 
 #define ARGC_ERR_MSG "Invalid nubmer of argument. Expected 4, but recieved"
 #define FORMANT_ERR_MSG "Invalid argument foramt"
@@ -16,8 +15,9 @@
 #define WRITE_FILE_ERR_MSG "Failed writing to"
 #define OPEN_FILE_ERR_MSG "Unable to open file"
 #define CREATE_FILE_ERR_MSG "Unable to create file"
+#define NULL_PINTER_ERR_MSG "Trying to use null pointer"
 
-#define min(x,y) ((x) <= (y) ? (x) : (y))
+#define min(x, y) ((x) <= (y) ? (x) : (y))
 
 typedef enum data_unit_t {
     B,
@@ -32,16 +32,35 @@ typedef struct data_t {
     DataUnit dataUnit;
 } DataAmount;
 
-long long getAmountKiloByte(DataAmount data);
 
+/**
+ * Return amount of data in kilobyte
+ * @param data - Data amount
+ * @return amount of data in kilobyte
+ */
+long long getAmountKiloByte(DataAmount data) {
+    if (data.dataUnit == G) {
+        return data.amount * 1073741824;
+    } else if (data.dataUnit == M) {
+        return data.amount * 1048576;
+    } else if (data.dataUnit == K) {
+        return data.amount * 1024;
+    } else {
+        return data.amount;
+    }
+}
 
+/**
+ *
+ * @param str - Input data
+ * @return The amount of kilobytes requested
+ */
 long long getDataAmount(char *str) {
     char *tmp;
     int res = (int) strtol(str, &tmp, 10);
 
     DataAmount data;
     data.amount = res;
-    // TODO error 
     if (0 == strcmp(tmp, "B")) {
         data.dataUnit = B;
     } else if (0 == strcmp(tmp, "K")) {
@@ -66,7 +85,7 @@ int isPrintable(char c) {
 
 /**
  * Return the size of the buffer which fits to the data amount
- * requested by user. Using convension that
+ * requested by user. Using convention that
  * - 1028B = K
  * - 1028K = M
  * - 1028M = G
@@ -78,25 +97,7 @@ int getBufferSize(long long int amount) {
     if (amount >= 1048576) { // 1024 ^ 2 = 1048576 aka over a 1M
         return 4096;
     }
-	return 1024;
-}
-
-
-/**
- * Return amount of data in kilobyte
- * @param data - Data amount
- * @return amount of data in kilobyte
- */
-long long getAmountKiloByte(DataAmount data) {
-    if (data.dataUnit == G) {
-        return data.amount * 1073741824;
-    } else if (data.dataUnit == M) {
-        return data.amount * 1048576;
-    } else if (data.dataUnit == K) {
-        return data.amount * 1024;
-    } else {
-        return data.amount;
-    }
+    return 1024;
 }
 
 
@@ -110,9 +111,24 @@ void printStatistics(long long int charReq, long long int charRead, long long in
     printf("%lld characters requested, %lld characters read, %lld are printable\n", charReq, charRead, charPrintable);
 }
 
-int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int readNumber, int *iBufferIndex, int oBufferIndex, char *isBufferFull) {
+/**
+ *
+ * @param inputBuffer   - String to filter
+ * @param outputBuffer  - String to which filtered string is copied
+ * @param bufferSize    - Size of the buffer
+ * @param readNumber    - How much to from string
+ * @param iBufferIndex  - The index from which the input string have a relevant data
+ * @param oBufferIndex  - The index from which I start copy to outputBuffer
+ * @param isBufferFull  - A flag to know if the outputBuffer is full
+ * @return The number of bytes which are printable
+ */
+int
+filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int readNumber, int *iBufferIndex, int oBufferIndex,
+             char *isBufferFull) {
     if (inputBuffer == NULL || outputBuffer == NULL) {
         // TODO error message and errno
+        printf("LINE: %d, Error - %s\n", __LINE__, NULL_PINTER_ERR_MSG);
+
         return -1;
     }
     int i, j = 0;
@@ -120,10 +136,10 @@ int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int read
         if (isPrintable(inputBuffer[i])) {
             outputBuffer[oBufferIndex + j++] = inputBuffer[i];
         }
-        // Write to output file If file outputBuffer 
-        // is full. Set the index from which you
-        // should filter start filter.
-        if(oBufferIndex + j == bufferSize){
+        // Write to output file If file outputBuffer is full.
+        // Set the index from which you should filter start
+        // filter.
+        if (oBufferIndex + j == bufferSize) {
             *isBufferFull = 1;
             *iBufferIndex = ++i;
             return j;
@@ -132,20 +148,35 @@ int filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int read
     return j;
 }
 
-// TODO Write error message and errno 
-char writeBuffer(char *outputBuffer, int ofd, int size) {
+/**
+ *
+ * @param outputBuffer  - Buffer from which to write
+ * @param ofd           - Output file descriptor
+ * @param size          - The size of bytes to write
+ * @param output_file   - The name of the file to write
+ * @return 1 if the writing is successful, 0 otherwise
+ */
+char writeBuffer(char *outputBuffer, int ofd, int size, char *output_file) {
+    if (outputBuffer == NULL || output_file == NULL) {
+        // TODO null pointer
+    }
+    if (size < 0) {
+        // TODO error
+    }
+
     ssize_t written = write(ofd, outputBuffer, (size_t) size);
     if (written < 0) {
-    	// TODO error message
+        printf("LINE: %d, Error - %s %s\n", __LINE__, WRITE_FILE_ERR_MSG, output_file);
+        // TODO error message
         return 0;
     }
     return 1;
 }
 
 int main(int argc, char **argv) {
-    int bufferSize, bufferReadSize = 0, bufferWritreSize = 0;
+    int bufferSize, bufferReadSize = 0, bufferWriteSize = 0;
     char *inputBuffer = NULL, *outputBuffer = NULL;
-    long long int outputSize, charReq = 0; 
+    long long int outputSize, charReq = 0;
 
     // Data amount, input, output
     char *data, *input_file, *output_file;
@@ -159,7 +190,8 @@ int main(int argc, char **argv) {
 
 
     if (argc != 4) {
-    	printf("LINE: %d, Error - %s %d\n", __LINE__, ARGC_ERR_MSG, argc);
+        printf("LINE: %d, Error - %s %d\n", __LINE__, ARGC_ERR_MSG, argc);
+        exit(errno);
         return 0;
     }
 
@@ -176,87 +208,100 @@ int main(int argc, char **argv) {
     outputBuffer = malloc(bufferSize * sizeof(char));
 
     if (inputBuffer == NULL || outputBuffer == NULL) {
-    	printf("LINE: %d, Error - %s\n", __LINE__, ALLOC_ERR_MSG);
+        printf("LINE: %d, Error - %s %s\n", __LINE__, ALLOC_ERR_MSG, strerror(errno));
         goto freeMem;
     }
 
     ifd = open(input_file, O_RDONLY, S_IRUSR);
-    if(ifd == -1){
-    	printf("LINE: %d, Error - %s %s\n", __LINE__, OPEN_FILE_ERR_MSG, input_file);
-    	goto freeMem;
+    if (ifd == -1) {
+        printf("LINE: %d, Error - %s %s\n", __LINE__, OPEN_FILE_ERR_MSG, input_file);
+        goto freeMem;
     }
 
-    ofd = creat(output_file, S_IRUSR);
-    if(ofd == -1){
-    	printf("LINE: %d, Error - %s %s\n", __LINE__, CREATE_FILE_ERR_MSG, input_file);
-    	goto freeMem;
+    ofd = creat(output_file, S_IRWXU | S_IRGRP | S_IROTH);
+    if (ofd == -1) {
+        printf("LINE: %d, Error - %s %s\n", __LINE__, CREATE_FILE_ERR_MSG, output_file);
+        goto freeMem;
     }
 
     ofd = open(output_file, O_WRONLY, S_IWUSR);
-    if(ofd == -1){
-    	printf("LINE: %d, Error - %s %s\n", __LINE__, OPEN_FILE_ERR_MSG, input_file);
-    	
-    }
-    if (ifd == -1 || ofd == -1) {
+    if (ofd == -1) {
+        printf("LINE: %d, Error - %s %s\n", __LINE__, OPEN_FILE_ERR_MSG, output_file);
         goto freeMem;
     }
 
 
     while (outputSize > 0) {
-        bufferReadSize = min(outputSize, bufferSize);
+        bufferReadSize = (int) min(outputSize, bufferSize);
+
         readNumber = read(ifd, inputBuffer, (size_t) bufferReadSize);
 
-	    if (readNumber < 0) {
-	    	printf("LINE: %d, Error - %s %s\n", __LINE__, READ_FILE_ERR_MSG, input_file);
-	        goto freeMem;
-	    }
-        if(readNumber == 0){ 
+        if (readNumber < 0) {
+            printf("LINE: %d, Error - %s %s\n", __LINE__, READ_FILE_ERR_MSG, input_file);
+            goto freeMem;
+        }
+
+        if (readNumber == 0) {
             // EOF, Reset pointer if we read all the file 
-            lseek(ifd, 0, SEEK_SET);            
+            lseek(ifd, 0, SEEK_SET);
         } else {
-            printf("%zu %d\n", readNumber, bufferReadSize);
-            printable = filterBuffer(inputBuffer, outputBuffer, bufferSize,readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
-            if (printable == -1){
+            printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber, &iBufferIndex,
+                                     oBufferIndex,
+                                     &isBufferFull);
+            if (printable == -1) {
                 // TODO error
                 goto freeMem;
             }
-            
-            if(isBufferFull){
-                // bufferWritreSize = min(outputSize, bufferSize);
-                oBufferIndex = 0;
-                readNumber -= iBufferIndex;
-                printableCount += printable;        // How much printable bytes
+
+            if (isBufferFull) {
+
+                // How much printable bytes
+                printableCount += printable;
+
                 // Write to output
-                if(!writeBuffer(outputBuffer, ofd, bufferSize)){
+                if (!writeBuffer(outputBuffer, ofd, bufferSize, output_file)) {
                     // TODO error
                     goto freeMem;
                 }
 
                 // Fill the output buffer with bytes left in input buffer
                 oBufferIndex = 0;
-                printable = filterBuffer(inputBuffer, outputBuffer, bufferSize,readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
-                printableCount += printable;    // How much printable bytes
+                printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber,
+                                         &iBufferIndex, oBufferIndex, &isBufferFull);
                 iBufferIndex = 0;
                 isBufferFull = 0;
-            } else {
-                oBufferIndex += printable;
-                printableCount += printable;    // How much printable bytes
             }
 
-            outputSize -= readNumber;           // How much left to read
-                                                // from request
-            writtenCount += readNumber;         // How much bytes read
+            oBufferIndex += printable;
+
+            // How much printable bytes
+            printableCount += printable;
+
+            // How much left to read from request
+            outputSize -= readNumber;
+
+            // How much bytes read
+            writtenCount += readNumber;
+
+            // In a case outputBuffer is not empty but still not full
+            // save how much left to write after the loop ends
+            bufferWriteSize = min(bufferSize, oBufferIndex);
         }
     }
 
-	printStatistics(charReq, writtenCount, printableCount);
-	
+    // Write to output
+    if (!writeBuffer(outputBuffer, ofd, bufferWriteSize, output_file)) {
+        // TODO error
+        goto freeMem;
+    }
+
+    printStatistics(charReq, writtenCount, printableCount);
+
     freeMem:
     close(ofd);
     close(ifd);
     free(inputBuffer);
     free(outputBuffer);
-
 
     return 0;
 }
