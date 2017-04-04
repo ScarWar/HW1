@@ -9,8 +9,9 @@
 
 
 #define report_error(str) printf("LINE: %d, Error - %s %s\n", __LINE__, (str), strerror(errno))
+#define min(x, y) ((x) <= (y) ? (x) : (y))
 
-
+// Error messages
 #define ARGC_ERR_MSG "Invalid nubmer of argument. Expected 4, but recieved"
 #define FORMANT_ERR_MSG "Invalid argument foramt."
 #define ALLOC_ERR_MSG "Memory allocation failed."
@@ -20,7 +21,6 @@
 #define CREATE_FILE_ERR_MSG "Unable to create file."
 #define NULL_PINTER_ERR_MSG "Trying to use null pointer"
 
-#define min(x, y) ((x) <= (y) ? (x) : (y))
 
 typedef enum data_unit_t {
     B,
@@ -70,16 +70,18 @@ long long getDataAmount(char *str) {
         data.dataUnit = K;
     } else if (0 == strcmp(tmp, "M")) {
         data.dataUnit = M;
-    } else {
+    } else if (0 == strcmp(tmp, "G")){
         data.dataUnit = G;
+    } else {
+        return -1;
     }
     return getAmountKiloByte(data);
 }
 
 /**
- * Return if the value of the byte is between 20 and 126 
+ * Return if the value of the byte is between 32 and 126 
  * @param c - byte
- * @return  - 1 if the byte value is between 20 and 126,
+ * @return  - 1 if the byte value is between 32 and 126,
 		 	  otherwise 0.
  */
 int isPrintable(char c) {
@@ -110,11 +112,13 @@ int getBufferSize(long long int amount) {
  * @param charRead 		- Number of characters read
  * @param charPrintable - Number of printable characters
  */
-void printStatistics(long long int charReq, long long int charRead, long long int charPrintable) {
+int printStatistics(long long int charReq, long long int charRead, long long int charPrintable) {
 	if( charReq < 0 || charRead < 0 || charPrintable < 0){
         printf("LINE: %d, Error - %s\n", __LINE__, "Can't recieve negative numbers");
+        return 0;
     }
     printf("%lld characters requested, %lld characters read, %lld are printable\n", charReq, charRead, charPrintable);
+    return 1;
 }
 
 /**
@@ -138,6 +142,7 @@ filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int readNumb
 
     if (bufferSize < 0 || oBufferIndex < 0 || *iBufferIndex < 0 || readNumber < 0) {
         printf("LINE: %d, Error - %s\n", __LINE__, "Can't recieve negative numbers");
+        return -1;
     }
     int i, j = 0;
     for (i = *iBufferIndex; i < readNumber; ++i) {
@@ -167,10 +172,14 @@ filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int readNumb
 char writeBuffer(char *outputBuffer, int ofd, int size, char *output_file) {
     if (outputBuffer == NULL || output_file == NULL) {
         printf("LINE: %d, Error - %s\n", __LINE__, NULL_PINTER_ERR_MSG);
+        return 0;
     }
     if (size < 0) {
         printf("LINE: %d, Error - %s\n", __LINE__, "Invalid argument, can't recieve negative values");
+        return 0;
     }
+    if(size == 0)
+        return 1;
     ssize_t written = write(ofd, outputBuffer, (size_t) size);
     if (written < 0) {
         report_error(WRITE_FILE_ERR_MSG);
@@ -194,7 +203,6 @@ int main(int argc, char **argv) {
     int iBufferIndex = 0, oBufferIndex = 0, printable = 0;
     ssize_t readNumber, writtenCount = 0, printableCount = 0;
 
-
     if (argc != 4) {
         printf("LINE: %d, Error - %s %d\n", __LINE__, ARGC_ERR_MSG, argc);
         return 0;
@@ -205,6 +213,10 @@ int main(int argc, char **argv) {
     output_file = argv[3];  // Output file name
 
     outputSize = getDataAmount(data);
+    if(outputSize == -1){
+        report_error(FORMANT_ERR_MSG);
+        return -1;
+    }
     bufferSize = getBufferSize(outputSize);
     charReq = outputSize;
 
@@ -214,29 +226,30 @@ int main(int argc, char **argv) {
 
     if (inputBuffer == NULL || outputBuffer == NULL) {
         report_error(ALLOC_ERR_MSG);
-        goto freeMem;
+        return -1;
     }
 
     ifd = open(input_file, O_RDONLY, S_IRUSR);
     if (ifd == -1) {
         report_error(OPEN_FILE_ERR_MSG);
-        goto freeMem;
+        return -1;
     }
 
-    ofd = creat(output_file, S_IRWXU | S_IRGRP | S_IROTH);
+    // Create new file with User premission to read write 
+    ofd = creat(output_file, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
     if (ofd == -1) {
         report_error(CREATE_FILE_ERR_MSG);
     	close(ofd);
-        goto freeMem;
+        return -1;
     }
 
     ofd = open(output_file, O_WRONLY, S_IWUSR);
     if (ofd == -1) {
         report_error(OPEN_FILE_ERR_MSG);
-		close(ofd);
-        goto freeMem;
+        close(ofd);
+		close(ifd);
+        return -1;
     }
-
 
     while (outputSize > 0) {
         bufferReadSize = (int) min(outputSize, bufferSize);
@@ -247,18 +260,23 @@ int main(int argc, char **argv) {
             report_error(READ_FILE_ERR_MSG);
 		    close(ofd);
     		close(ifd);	
-            goto freeMem;
+            return -1;
         }
 
         if (readNumber == 0) {
             // EOF, Reset pointer if we read all the file 
-            lseek(ifd, 0, SEEK_SET);
+            if(lseek(ifd, 0, SEEK_SET) == -1){
+                printf("LINE: %d, Error - %s\n", __LINE__, strerror(errno));
+                close(ofd);
+                close(ifd); 
+                return -1;
+            }
         } else {
             printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
             if (printable == -1) {
 				close(ofd);
     			close(ifd);
-                goto freeMem;
+                return -1;
             }
 
             if (isBufferFull) {
@@ -270,12 +288,19 @@ int main(int argc, char **argv) {
                 if (!writeBuffer(outputBuffer, ofd, bufferSize, output_file)) {
 				    close(ofd);
     				close(ifd);
-                    goto freeMem;
+                    return -1;
                 }
 
                 // Fill the output buffer with bytes left in input buffer
                 oBufferIndex = 0;
                 printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
+
+                if (printable == -1) {
+                    close(ofd);
+                    close(ifd);
+                    return -1;
+                }
+
                 iBufferIndex = 0;
                 isBufferFull = 0;
             }
@@ -300,14 +325,18 @@ int main(int argc, char **argv) {
     if (!writeBuffer(outputBuffer, ofd, bufferWriteSize, output_file)) {
 		close(ofd);
     	close(ifd);
-        goto freeMem;
+        return -1;
     }
 
-    printStatistics(charReq, writtenCount, printableCount);
+    if(!printStatistics(charReq, writtenCount, printableCount)){
+        close(ofd);
+        close(ifd);
+        return -1;
+    }
 
-    freeMem:
     free(inputBuffer);
     free(outputBuffer);
-
+    close(ofd);
+    close(ifd);
     return 0;
 }
