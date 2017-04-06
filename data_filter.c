@@ -70,7 +70,7 @@ long long getDataAmount(char *str) {
         data.dataUnit = K;
     } else if (0 == strcmp(tmp, "M")) {
         data.dataUnit = M;
-    } else if (0 == strcmp(tmp, "G")){
+    } else if (0 == strcmp(tmp, "G")) {
         data.dataUnit = G;
     } else {
         return -1;
@@ -113,8 +113,8 @@ int getBufferSize(long long int amount) {
  * @param charPrintable - Number of printable characters
  */
 int printStatistics(long long int charReq, long long int charRead, long long int charPrintable) {
-	if( charReq < 0 || charRead < 0 || charPrintable < 0){
-        printf("LINE: %d, Error - %s\n", __LINE__, "Can't recieve negative numbers");
+    if (charReq < 0 || charRead < 0 || charPrintable < 0) {
+        printf("LINE: %d, Error - %s\n", __LINE__, "Can't receive negative numbers");
         return 0;
     }
     printf("%lld characters requested, %lld characters read, %lld are printable\n", charReq, charRead, charPrintable);
@@ -141,7 +141,7 @@ filterBuffer(char *inputBuffer, char *outputBuffer, int bufferSize, int readNumb
     }
 
     if (bufferSize < 0 || oBufferIndex < 0 || *iBufferIndex < 0 || readNumber < 0) {
-        printf("LINE: %d, Error - %s\n", __LINE__, "Can't recieve negative numbers");
+        printf("LINE: %d, Error - %s\n", __LINE__, "Can't receive negative numbers");
         return -1;
     }
     int i, j = 0;
@@ -175,10 +175,10 @@ char writeBuffer(char *outputBuffer, int ofd, int size, char *output_file) {
         return 0;
     }
     if (size < 0) {
-        printf("LINE: %d, Error - %s\n", __LINE__, "Invalid argument, can't recieve negative values");
+        printf("LINE: %d, Error - %s\n", __LINE__, "Invalid argument, can't receive negative values");
         return 0;
     }
-    if(size == 0)
+    if (size == 0)
         return 1;
     ssize_t written = write(ofd, outputBuffer, (size_t) size);
     if (written < 0) {
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
 
     if (argc != 4) {
         printf("LINE: %d, Error - %s %d\n", __LINE__, ARGC_ERR_MSG, argc);
-        return 0;
+        return -1;
     }
 
     data = argv[1];         // Data amount
@@ -213,8 +213,8 @@ int main(int argc, char **argv) {
     output_file = argv[3];  // Output file name
 
     outputSize = getDataAmount(data);
-    if(outputSize == -1){
-        report_error(FORMANT_ERR_MSG);
+    if (outputSize < 0) {
+        printf("LINE: %d, Error - %s\n", __LINE__, FORMANT_ERR_MSG);
         return -1;
     }
     bufferSize = getBufferSize(outputSize);
@@ -226,6 +226,8 @@ int main(int argc, char **argv) {
 
     if (inputBuffer == NULL || outputBuffer == NULL) {
         report_error(ALLOC_ERR_MSG);
+        free(inputBuffer);
+        free(outputBuffer);
         return -1;
     }
 
@@ -235,19 +237,20 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    // Create new file with User premission to read write 
+    // Create new file with User permission to read
+    // and write, and other, group permission to read
     ofd = creat(output_file, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
     if (ofd == -1) {
         report_error(CREATE_FILE_ERR_MSG);
-    	close(ofd);
+        close(ifd);
         return -1;
     }
 
     ofd = open(output_file, O_WRONLY, S_IWUSR);
     if (ofd == -1) {
         report_error(OPEN_FILE_ERR_MSG);
+        close(ifd);
         close(ofd);
-		close(ifd);
         return -1;
     }
 
@@ -258,24 +261,25 @@ int main(int argc, char **argv) {
 
         if (readNumber < 0) {
             report_error(READ_FILE_ERR_MSG);
-		    close(ofd);
-    		close(ifd);	
+            close(ifd);
+            close(ofd);
             return -1;
         }
 
         if (readNumber == 0) {
             // EOF, Reset pointer if we read all the file 
-            if(lseek(ifd, 0, SEEK_SET) == -1){
+            if (lseek(ifd, 0, SEEK_SET) == -1) {
                 printf("LINE: %d, Error - %s\n", __LINE__, strerror(errno));
+                close(ifd);
                 close(ofd);
-                close(ifd); 
                 return -1;
             }
         } else {
-            printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
+            printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber, &iBufferIndex,
+                                     oBufferIndex, &isBufferFull);
             if (printable == -1) {
-				close(ofd);
-    			close(ifd);
+                close(ifd);
+                close(ofd);
                 return -1;
             }
 
@@ -286,18 +290,23 @@ int main(int argc, char **argv) {
 
                 // Write to output
                 if (!writeBuffer(outputBuffer, ofd, bufferSize, output_file)) {
-				    close(ofd);
-    				close(ifd);
+                    close(ifd);
+                    close(ofd);
+                    free(inputBuffer);
+                    free(outputBuffer);
                     return -1;
                 }
 
                 // Fill the output buffer with bytes left in input buffer
                 oBufferIndex = 0;
-                printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber, &iBufferIndex, oBufferIndex, &isBufferFull);
+                printable = filterBuffer(inputBuffer, outputBuffer, bufferSize, (int) readNumber, &iBufferIndex,
+                                         oBufferIndex, &isBufferFull);
 
                 if (printable == -1) {
-                    close(ofd);
                     close(ifd);
+                    close(ofd);
+                    free(inputBuffer);
+                    free(outputBuffer);
                     return -1;
                 }
 
@@ -323,20 +332,24 @@ int main(int argc, char **argv) {
 
     // Write to output
     if (!writeBuffer(outputBuffer, ofd, bufferWriteSize, output_file)) {
-		close(ofd);
-    	close(ifd);
+        close(ifd);
+        close(ofd);
+        free(inputBuffer);
+        free(outputBuffer);
         return -1;
     }
 
-    if(!printStatistics(charReq, writtenCount, printableCount)){
-        close(ofd);
+    if (!printStatistics(charReq, writtenCount, printableCount)) {
         close(ifd);
+        close(ofd);
+        free(inputBuffer);
+        free(outputBuffer);
         return -1;
     }
 
     free(inputBuffer);
     free(outputBuffer);
-    close(ofd);
     close(ifd);
+    close(ofd);
     return 0;
 }
