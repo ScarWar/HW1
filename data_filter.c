@@ -12,8 +12,8 @@
 #define min(x, y) ((x) <= (y) ? (x) : (y))
 
 // Error messages
-#define ARGC_ERR_MSG "Invalid nubmer of argument. Expected 4, but recieved"
-#define FORMANT_ERR_MSG "Invalid argument foramt."
+#define ARGC_ERR_MSG "Invalid number of argument. Expected 4, but received"
+#define FORMANT_ERR_MSG "Invalid argument format."
 #define ALLOC_ERR_MSG "Memory allocation failed."
 #define READ_FILE_ERR_MSG "Failed reading."
 #define WRITE_FILE_ERR_MSG "Failed writing."
