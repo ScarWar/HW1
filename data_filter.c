@@ -280,6 +280,8 @@ int main(int argc, char **argv) {
             if (printable == -1) {
                 close(ifd);
                 close(ofd);
+                free(inputBuffer);
+                free(outputBuffer);
                 return -1;
             }
 
