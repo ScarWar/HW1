@@ -285,6 +285,7 @@ int main(int argc, char **argv) {
                 return -1;
             }
 
+            // If the output buffer is full write to output file
             if (isBufferFull) {
 
                 // How much printable bytes

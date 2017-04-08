@@ -1,0 +1,3 @@
+/home/ariel/Documents/Tel Aviv University/Comuputer Science/Operation Systems/HW1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/ariel/Documents/Tel Aviv University/Comuputer Science/Operation Systems/HW1/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/ariel/Documents/Tel Aviv University/Comuputer Science/Operation Systems/HW1/cmake-build-debug/CMakeFiles/HW1.dir

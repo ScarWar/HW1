@@ -1,0 +1,2 @@
+export OUTPUT_DATA=/home/ariel/Documents/Tel\ Aviv\ University/Comuputer\ Science/Operation\ Systems/HW1/output.txt
+gcc data_filter.c -o data_filter
